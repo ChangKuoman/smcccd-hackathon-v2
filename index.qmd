@@ -1,0 +1,76 @@
+---
+title: "Spotify Analysis"
+author: "Samanta Chang"
+format: html
+editor: visual
+toc: true
+toc-title: "Table of Contents"
+df-print: paged
+---
+
+Variable 	Description
+Name 		  Name of the champion
+Role 		  Role of the champion in a game
+KDA 		  Average kills, deaths and assists associated with each champion
+WRate 	  Win rates of each champion
+PickRate 	SPick rates of each champion
+RolePerc 	Percent of time the champion is used in the expected role
+BanPerc 	Ban percentages associated with each champion
+
+```{r echo=FALSE, results='hide', message = FALSE, warning=FALSE}
+options(repos = "https://cran.r-project.org")
+paquetes <- c("readr", "dplyr", "ggplot2","ggmosaic","fitdistrplus", "janitor", "stringr") 
+
+for (paquete in paquetes) {
+  if (!require(paquete, character.only = TRUE)) {
+    install.packages(paquete, quiet = TRUE)
+    library(paquete, character.only = TRUE)
+  }
+}
+```
+
+```{r message = FALSE}
+DF1 <- read_csv("data/patch1.csv")
+DF2 <- read_csv("data/patch2.csv")
+```
+
+```{r}
+source("scripts/data_cleaning.R")
+```
+
+```{r}
+DF1N <- data_cleaning(DF1)
+DF2N <- data_cleaning(DF2)
+```
+
+```{r}
+DFT <- full_join(DF1N, DF2N, by = c("name"), suffix = c("_p1", "_p2"))
+DFT
+```
+
+
+```{r warning=FALSE}
+source("scripts/norm.R")
+norm(DFT, "w_rate_p1", "Win Rate Patch 1")
+```
+
+```{r warning=FALSE}
+source("scripts/norm.R")
+norm(DFT, "w_rate_p2", "Win Rate Patch 2")
+```
+```{r warning=FALSE}
+source("scripts/boxplot_g.R")
+boxplot_g(DFT, "w_rate_p1", "Win Rate Patch 1")
+```
+
+
+```{r warning=FALSE}
+source("scripts/boxplot_g.R")
+boxplot_g(DFT, "w_rate_p2", "Win Rate Patch 2")
+```
+
+
+```{r warning=FALSE}
+source("scripts/histograma.R")
+histograma(DFT, "w_rate_p1", "Win Rate Patch 1")
+```
