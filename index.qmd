@@ -8,14 +8,7 @@ toc-title: "Table of Contents"
 df-print: paged
 ---
 
-Variable 	Description
-Name 		  Name of the champion
-Role 		  Role of the champion in a game
-KDA 		  Average kills, deaths and assists associated with each champion
-WRate 	  Win rates of each champion
-PickRate 	SPick rates of each champion
-RolePerc 	Percent of time the champion is used in the expected role
-BanPerc 	Ban percentages associated with each champion
+Variable Description Name Name of the champion Role Role of the champion in a game KDA Average kills, deaths and assists associated with each champion WRate Win rates of each champion PickRate SPick rates of each champion RolePerc Percent of time the champion is used in the expected role BanPerc Ban percentages associated with each champion
 
 ```{r echo=FALSE, results='hide', message = FALSE, warning=FALSE}
 options(repos = "https://cran.r-project.org")
@@ -48,7 +41,6 @@ DFT <- full_join(DF1N, DF2N, by = c("name"), suffix = c("_p1", "_p2"))
 DFT
 ```
 
-
 ```{r warning=FALSE}
 source("scripts/norm.R")
 norm(DFT, "w_rate_p1", "Win Rate Patch 1")
@@ -58,19 +50,69 @@ norm(DFT, "w_rate_p1", "Win Rate Patch 1")
 source("scripts/norm.R")
 norm(DFT, "w_rate_p2", "Win Rate Patch 2")
 ```
+
 ```{r warning=FALSE}
 source("scripts/boxplot_g.R")
 boxplot_g(DFT, "w_rate_p1", "Win Rate Patch 1")
 ```
-
 
 ```{r warning=FALSE}
 source("scripts/boxplot_g.R")
 boxplot_g(DFT, "w_rate_p2", "Win Rate Patch 2")
 ```
 
-
 ```{r warning=FALSE}
 source("scripts/histograma.R")
 histograma(DFT, "w_rate_p1", "Win Rate Patch 1")
+```
+
+```{r warning=FALSE}
+source("scripts/barplot_g.R")
+barplot_g(DFT, "role_p2", "Role")
+```
+
+```{r warning=FALSE}
+source("scripts/boxplot_gv.R")
+boxplot_gv(
+  DFT,
+  x_col = "role_p1",
+  y_col = "kda_p1",
+  title = "Gráfico"
+)
+```
+
+```{r warning=FALSE}
+source("scripts/boxplot_gv.R")
+boxplot_gv(
+  DFT,
+  x_col = "role_p2",
+  y_col = "kda_p2",
+  title = "Gráfico"
+)
+```
+
+```{r warning=FALSE}
+source("scripts/regresion_lineal.R")
+regresion_lineal(
+  DFT,
+  x_col = "kda_p1",
+  y_col = "w_rate_p1",
+  titulo = "Gráfico",
+  y_lim = c(40, 60)
+)
+```
+
+```{r warning=FALSE}
+source("scripts/regresion_lineal.R")
+regresion_lineal(
+  DFT,
+  x_col = "kda_p2",
+  y_col = "w_rate_p2",
+  titulo = "Gráfico",
+  y_lim = c(40, 60)
+)
+```
+
+```{r}
+names(DFT)
 ```

@@ -55,8 +55,8 @@ histograma <- function(data, var, nombre) {
        xlim = c(valor_min - A, valor_max + A),
        ylim = c(0, max(frecuencias) + 5),
        xlab = nombre,
-       ylab = "Frecuencia Absoluta",
-       main = paste("Histograma de", nombre),
+       ylab = "Absolute Frequency",
+       main = paste("Graph:", nombre, "Histogram"),
        col = "darkgrey",
        border = "white")
   
@@ -65,20 +65,20 @@ histograma <- function(data, var, nombre) {
   abline(v = mediana, col = "red", lwd = 3, lty = 1)
   
   legend("topright", 
-         legend = c("Moda", "Media", "Mediana"), 
+         legend = c("Mode", "Mean", "Median"), 
          fill = c("blue", "green", "red"),
          cex = 0.7,
-         title = "Tendencia Central")
+         title = "Central Tendency")
   
-  # Imprimir resultados
-  cat("📊 Estadísticas agrupadas para", nombre, ":\n")
-  cat("   - Valor mínimo:", valor_min, "\n")
-  cat("   - Valor máximo:", valor_max, "\n")
-  cat("   - Rango:", rango, "\n")
-  cat("   - Registros:", n, "\n")
-  cat("   - Intervalos (Sturges):", k, "\n")
-  cat("   - Amplitud:", round(A, 2), "\n")
-  cat("   - Media:", round(media, 2), "\n")
-  cat("   - Moda:", round(moda, 2), "\n")
-  cat("   - Mediana:", round(mediana, 2), "\n")
+  # Print results
+  cat("📊 Grouped statistics for", nombre, ":\n")
+  cat("   - Minimum value:", valor_min, "\n")
+  cat("   - Maximum value:", valor_max, "\n")
+  cat("   - Range:", rango, "\n")
+  cat("   - Records:", n, "\n")
+  cat("   - Intervals (Sturges):", k, "\n")
+  cat("   - Width:", round(A, 2), "\n")
+  cat("   - Mean:", round(media, 2), "\n")
+  cat("   - Mode:", round(moda, 2), "\n")
+  cat("   - Median:", round(mediana, 2), "\n")
 }
