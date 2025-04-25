@@ -22,6 +22,14 @@ regresion_lineal <- function(data, x_col, y_col, titulo = "Gráfico de Regresió
   cor_val <- cor(data[[x_col]], data[[y_col]], use = "complete.obs")
   cat("La correlación entre", y_col, "y", x_col, "es de", round(cor_val, 3), "\n")
   
+  formula_text <- as.formula(paste(y_col, "~", x_col))
+  modelo <- lm(formula_text, data = data)
+  
+  # Calcular R²
+  r2 <- summary(modelo)$r.squared
+  cat("El coeficiente de determinación (R²) es de", round(r2, 3), "\n")
+  
+  
   return(cor_val)
 }
 

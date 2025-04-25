@@ -6,18 +6,17 @@ boxplot_g <- function(data, var, name) {
   
   x <- data[[var]]
   
+  #png("images/g1.png", width = 600, height = 600)  # Set dimensions for the image
+  
   # Crear boxplot
   boxplot(
     x,
     col = "royalblue",
     ylim = c(min(x), max(x)),
-    main = paste("Graph:", name, "Boxplot"),
+    main = paste("Graph:", name),
     cex.main = 1,
     ylab = name,
     outcol = "red"
   )
-  
-  # Calcular y mostrar coeficiente de variación
-  cv <- sd(x) / mean(x)
-  cat("El coeficiente de variación es de", round(cv * 100, 2), "%.\n")
+  #dev.off()
 }

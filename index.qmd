@@ -1,5 +1,5 @@
 ---
-title: "Spotify Analysis"
+title: "Data Analysis"
 author: "Samanta Chang"
 format: html
 editor: visual
@@ -8,11 +8,22 @@ toc-title: "Table of Contents"
 df-print: paged
 ---
 
-Variable Description Name Name of the champion Role Role of the champion in a game KDA Average kills, deaths and assists associated with each champion WRate Win rates of each champion PickRate SPick rates of each champion RolePerc Percent of time the champion is used in the expected role BanPerc Ban percentages associated with each champion
+```{r}
+data.frame(
+  Variable = c("Name", "Role", "KDA", "WRate", "PickRate", "RolePerc", "BanPerc"),
+  Description = c("Name of the champion", 
+                  "Role of the champion in a game", 
+                  "Average kills, deaths and assists associated with each champion",
+                  "Win rates of each champion",
+                  "Pick rates of each champion",
+                  "Percent of time the champion is used in the expected role",
+                  "Ban percentages associated with each champion")
+)
+```
 
 ```{r echo=FALSE, results='hide', message = FALSE, warning=FALSE}
 options(repos = "https://cran.r-project.org")
-paquetes <- c("readr", "dplyr", "ggplot2","ggmosaic","fitdistrplus", "janitor", "stringr") 
+paquetes <- c("readr", "dplyr", "ggplot2","ggmosaic","fitdistrplus", "janitor", "stringr", "factoextra", "ggcorrplot") 
 
 for (paquete in paquetes) {
   if (!require(paquete, character.only = TRUE)) {
@@ -25,21 +36,118 @@ for (paquete in paquetes) {
 ```{r message = FALSE}
 DF1 <- read_csv("data/patch1.csv")
 DF2 <- read_csv("data/patch2.csv")
-```
-
-```{r}
 source("scripts/data_cleaning.R")
-```
-
-```{r}
 DF1N <- data_cleaning(DF1)
 DF2N <- data_cleaning(DF2)
 ```
 
 ```{r}
-DFT <- full_join(DF1N, DF2N, by = c("name"), suffix = c("_p1", "_p2"))
+DFT <- DF2N %>%
+  inner_join(DF1N, by = "name", suffix = c("_p2", "_p1")) %>%
+  mutate(w_rate_diff = w_rate_p2 - w_rate_p1,
+         pick_rate_diff = pick_rate_p2 - pick_rate_p1,
+         ban_perc_diff = ban_perc_p2 - ban_perc_p1,
+         role_perc_diff = role_perc_p2 - role_perc_p1,
+         role_diff = role_p1 != role_p2,
+         kda_diff = kda_p2 - kda_p1) %>%
+  arrange(desc(w_rate_diff))
 DFT
 ```
+```{r}
+data.frame(
+  Variable = c(
+    "name", 
+    "role_p1", "kda_p1", "w_rate_p1", "pick_rate_p1", "role_perc_p1", "ban_perc_p1",
+    "role_p2", "kda_p2", "w_rate_p2", "pick_rate_p2", "role_perc_p2", "ban_perc_p2",
+    "role_diff", "kda_diff", "w_rate_diff", "pick_rate_diff", "role_perc_diff", "ban_perc_diff"),
+  
+  Description = c("Name of the champion", 
+                  
+                  "Role of the champion in the game - patch 12.22", 
+                  "Average kills, deaths and assists of the champion - patch 12.22",
+                  "Win rate of the champion - patch 12.22",
+                  "Pick rate of the champion - patch 12.22",
+                  "Percent of time the champion is used in the expected role - patch 12.22",
+                  "Ban percentage of the champion - patch 12.22",
+                  
+                  "Role of the champion in the game - patch 12.23", 
+                  "Average kills, deaths and assists of the champion - patch 12.23",
+                  "Win rate of the champion - patch 12.23",
+                  "Pick rate of the champion - patch 12.23",
+                  "Percent of time the champion is used in the expected role - patch 12.23",
+                  "Ban percentage of the champion - patch 12.23",
+                  
+                  "Indicates if the role of the champion changed between patches", 
+                  "Difference on the average kills, deaths and assists of the champion between patches",
+                  "Difference on the win rate of the champion between patches",
+                  "Difference on pick rate of the champion between patches",
+                  "Difference on the percent of time the champion is used in the expected role between patches",
+                  "Difference on the ban percentage of the champion between patches"),
+  
+  DataType = c("CHAR", 
+               "CHAR", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC",
+               "CHAR", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC",
+               "BOOLEAN", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC")
+)
+```
+
+```{r message = FALSE}
+source("scripts/boxplot_g.R")
+source("scripts/boxplot_gv.R")
+source("scripts/outliers_f.R")
+```
+
+```{r}
+boxplot_g(DFT, "w_rate_p1", "Win Rate")
+
+boxplot_gv(
+  DFT,
+  x_col = "role_p1", y_col = "w_rate_p1",
+  title = "Graph: Win Rate by Role Patch 1",
+  x_title = "Role", y_title = "Win Rate %"
+)
+```
+
+```{r}
+cv_general <- DFT %>%
+  summarise(
+    role_p1 = "General",
+    cv = (sd(w_rate_p1, na.rm = TRUE) / mean(w_rate_p1, na.rm = TRUE)) * 100
+  )
+
+cv_por_rol <- DFT %>%
+  group_by(role_p1) %>%
+  summarise(
+    cv = (sd(w_rate_p1, na.rm = TRUE) / mean(w_rate_p1, na.rm = TRUE)) * 100
+  )
+
+cv_completo <- bind_rows(cv_por_rol, cv_general)
+cv_completo
+save(cv_completo, file = "cv_completo.RData")
+```
+
+```{r}
+outliers <- find_outliers_group(DFT, "role_p1", "w_rate_p1")
+outliers$top
+outliers$bottom
+
+t <- find_outliers(DFT, "role_p1", "w_rate_p1")
+t
+```
+
+HASTA AQUI TODO BIEN
+
+```{r warning=FALSE}
+source("scripts/regresion_lineal.R")
+regresion_lineal(
+  DFT,
+  x_col = "w_rate_diff",
+  y_col = "kda_diff",
+  titulo = "Gráfico",
+  y_lim = c(-1,1)
+)
+```
+
 
 ```{r warning=FALSE}
 source("scripts/norm.R")
@@ -47,72 +155,65 @@ norm(DFT, "w_rate_p1", "Win Rate Patch 1")
 ```
 
 ```{r warning=FALSE}
-source("scripts/norm.R")
-norm(DFT, "w_rate_p2", "Win Rate Patch 2")
-```
-
-```{r warning=FALSE}
-source("scripts/boxplot_g.R")
-boxplot_g(DFT, "w_rate_p1", "Win Rate Patch 1")
-```
-
-```{r warning=FALSE}
-source("scripts/boxplot_g.R")
-boxplot_g(DFT, "w_rate_p2", "Win Rate Patch 2")
-```
-
-```{r warning=FALSE}
 source("scripts/histograma.R")
 histograma(DFT, "w_rate_p1", "Win Rate Patch 1")
 ```
 
-```{r warning=FALSE}
-source("scripts/barplot_g.R")
-barplot_g(DFT, "role_p2", "Role")
-```
+```{r}
+# Predicción simple con clustering k-means sobre métricas delta
+set.seed(123)
+cluster_data <- DFT %>% dplyr::select(w_rate_p1, ban_perc_p1, kda_p1)
+kmeans_result <- kmeans(scale(cluster_data), centers = 3, nstart = 25)
+DFT$cluster <- as.factor(kmeans_result$cluster)
 
-```{r warning=FALSE}
-source("scripts/boxplot_gv.R")
-boxplot_gv(
-  DFT,
-  x_col = "role_p1",
-  y_col = "kda_p1",
-  title = "Gráfico"
-)
-```
-
-```{r warning=FALSE}
-source("scripts/boxplot_gv.R")
-boxplot_gv(
-  DFT,
-  x_col = "role_p2",
-  y_col = "kda_p2",
-  title = "Gráfico"
-)
-```
-
-```{r warning=FALSE}
-source("scripts/regresion_lineal.R")
-regresion_lineal(
-  DFT,
-  x_col = "kda_p1",
-  y_col = "w_rate_p1",
-  titulo = "Gráfico",
-  y_lim = c(40, 60)
-)
-```
-
-```{r warning=FALSE}
-source("scripts/regresion_lineal.R")
-regresion_lineal(
-  DFT,
-  x_col = "kda_p2",
-  y_col = "w_rate_p2",
-  titulo = "Gráfico",
-  y_lim = c(40, 60)
-)
+# Visualización de clustering
+fviz_cluster(kmeans_result, data = scale(cluster_data), geom = "point", ellipse.type = "norm", main = "Clustering de Campeones según Cambios en Métricas")
 ```
 
 ```{r}
 names(DFT)
+```
+
+```{r}
+# Install required package if not already installed
+if (!require(dbscan)) install.packages("dbscan")
+
+library(dbscan)
+
+# Preprocess the data
+cluster_data <- DFT %>% dplyr::select(w_rate_diff, pick_rate_diff, ban_perc_diff)
+
+# Standardize the data (important for DBSCAN)
+cluster_data_scaled <- scale(cluster_data)
+
+# Apply DBSCAN
+# eps is the maximum distance between two points to be considered as in the same neighborhood
+# minPts is the minimum number of points required to form a cluster
+dbscan_result <- dbscan(cluster_data_scaled, eps = 0.5, minPts = 5)
+
+# Add DBSCAN cluster results to the data
+DFT$dbscan_cluster <- as.factor(dbscan_result$cluster)
+
+# Visualize the DBSCAN clustering result
+library(ggplot2)
+ggplot(DFT, aes(x = w_rate_diff, y = pick_rate_diff, color = dbscan_cluster)) +
+  geom_point() +
+  labs(title = "DBSCAN Clustering on Metrics Differences",
+       x = "Win Rate Difference",
+       y = "Pick Rate Difference") +
+  theme_minimal()
+
+```
+
+```{r}
+
+
+# Compute correlation matrix
+cor_matrix <- DFT %>%
+  select_if(is.numeric) %>%
+  cor(use = "complete.obs")
+
+# Plot heatmap
+ggcorrplot(cor_matrix, lab = FALSE, title = "Correlation Heatmap")
+
 ```
