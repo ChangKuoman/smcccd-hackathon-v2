@@ -53,6 +53,7 @@ DFT <- DF2N %>%
   arrange(desc(w_rate_diff))
 DFT
 ```
+
 ```{r}
 sw <- data.frame(
   Variable = c(
@@ -139,7 +140,6 @@ bo
 tg
 ```
 
-
 ============================
 
 ```{r}
@@ -180,7 +180,6 @@ cv_completo2 <- bind_rows(cv_por_rol, cv_general)
 cv_completo2
 ```
 
-
 ```{r}
 df1 <- as.data.frame(cv_completo)
 df2 <- as.data.frame(cv_completo2)
@@ -208,6 +207,7 @@ norm(DFT, "w_rate_p1", "Win Rate Patch 1")
 ```{r warning=FALSE}
 norm(DFT, "w_rate_p2", "Win Rate Patch 2")
 ```
+
 ==================
 
 ```{r}
@@ -255,14 +255,17 @@ legend("topleft",
        cex = 0.8)
 
 ```
+
 ================
 
 ```{r warning=FALSE}
 histograma(DFT, "w_rate_p1", "Win Rate", "Win Rate Patch 12.22")
 ```
+
 ```{r warning=FALSE}
 histograma(DFT, "w_rate_p2", "Win Rate", "Win Rate Patch 12.23")
 ```
+
 ```{r warning=FALSE}
 histograma(DFT, "w_rate_diff", "Win Rate", "Win Rate Difference")
 ```
@@ -270,16 +273,16 @@ histograma(DFT, "w_rate_diff", "Win Rate", "Win Rate Difference")
 ```{r warning=FALSE}
 histograma(DFT, "kda_p1", "KDA", "KDA Patch 12.22")
 ```
+
 ```{r warning=FALSE}
 histograma(DFT, "kda_p2", "KDA", "KDA Patch 12.23")
 ```
+
 ```{r warning=FALSE}
 histograma(DFT, "kda_diff", "KDA", "KDA Difference")
 ```
 
-
 ==========
-
 
 ```{r warning=FALSE}
 source("scripts/regresion_lineal.R")
@@ -292,7 +295,6 @@ regresion_lineal(
   y_lim = c(-1,1)
 )
 ```
-
 
 ==============
 
@@ -347,8 +349,6 @@ rf_accuracyT <- mean(rf_predT == test_data$change_patch)
 print(paste("Random Forest Accuracy:", round(rf_accuracyT * 100, 2), "%"))
 ```
 
-
-
 predict
 
 ```{r}
@@ -366,3 +366,13 @@ DFT$rf_pred <- rf_future
 DFT_result <- DFT[, c("name", "rf_pred")]
 DFT_result
 ```
+
+```{r}
+source("scripts/barplot_g.R")
+barplot_g(DFT_result, "rf_pred", "name")
+barplot_g(DFT, "change_patch", "name")
+```
+
+
+
+

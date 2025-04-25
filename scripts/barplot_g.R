@@ -5,7 +5,7 @@ barplot_g <- function(data, column_name, name, highlight_values = NULL, highligh
   # Create frequency table
   freq_table <- table(column_data)
   prop_table <- prop.table(freq_table) * 100
-  p_df <- data.frame(Categoria = names(prop_table), Porcentaje = as.numeric(prop_table))
+  p_df <- data.frame(Category = names(prop_table), Frequency = as.numeric(freq_table), Percentage = as.numeric(prop_table))
   
   # Prepare color vector
   color_vector <- if (!is.null(highlight_values)) {
