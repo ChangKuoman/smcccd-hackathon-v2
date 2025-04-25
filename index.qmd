@@ -23,7 +23,7 @@ data.frame(
 
 ```{r echo=FALSE, results='hide', message = FALSE, warning=FALSE}
 options(repos = "https://cran.r-project.org")
-paquetes <- c("readr", "dplyr", "ggplot2","ggmosaic","fitdistrplus", "janitor", "stringr", "factoextra", "ggcorrplot") 
+paquetes <- c("readr", "dplyr", "ggplot2","ggmosaic","fitdistrplus", "janitor", "stringr", "factoextra", "ggcorrplot", "randomForest") 
 
 for (paquete in paquetes) {
   if (!require(paquete, character.only = TRUE)) {
@@ -54,13 +54,12 @@ DFT <- DF2N %>%
 DFT
 ```
 ```{r}
-data.frame(
+sw <- data.frame(
   Variable = c(
     "name", 
     "role_p1", "kda_p1", "w_rate_p1", "pick_rate_p1", "role_perc_p1", "ban_perc_p1",
     "role_p2", "kda_p2", "w_rate_p2", "pick_rate_p2", "role_perc_p2", "ban_perc_p2",
     "role_diff", "kda_diff", "w_rate_diff", "pick_rate_diff", "role_perc_diff", "ban_perc_diff"),
-  
   Description = c("Name of the champion", 
                   
                   "Role of the champion in the game - patch 12.22", 
@@ -83,12 +82,12 @@ data.frame(
                   "Difference on pick rate of the champion between patches",
                   "Difference on the percent of time the champion is used in the expected role between patches",
                   "Difference on the ban percentage of the champion between patches"),
-  
   DataType = c("CHAR", 
                "CHAR", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC",
                "CHAR", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC",
                "BOOLEAN", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC", "NUMERIC")
 )
+print(sw)
 ```
 
 ```{r message = FALSE}
@@ -214,6 +213,102 @@ cor_matrix <- DFT %>%
   cor(use = "complete.obs")
 
 # Plot heatmap
-ggcorrplot(cor_matrix, lab = FALSE, title = "Correlation Heatmap")
+heatmap_plot <- ggcorrplot(cor_matrix, lab = TRUE, title = "Correlation Heatmap")
+ggsave("images/correlation_heatmap.png", plot = heatmap_plot, width = 12, height = 10, dpi = 300)
+```
 
+
+
+
+random forest
+
+```{r}
+DFT <- DFT %>%
+  mutate(change_patch = case_when(
+    w_rate_diff > 0.05 & pick_rate_diff > 0.05 ~ "Buff",
+    w_rate_diff < -0.05 & pick_rate_diff < -0.05 ~ "Nerf",
+    TRUE ~ "None"
+  )) %>%
+  mutate(change_patch = as.factor(change_patch))
+
+# Asegúrate de que change_patch sea factor
+DFT$change_patch <- as.factor(DFT$change_patch)
+
+# Variables del modelo (solo _p1)
+features_p1 <- c("w_rate_p1", "pick_rate_p1", "ban_perc_p1", "kda_p1", "role_perc_p1")
+set.seed(123)  # Set seed for reproducibility
+train_indices <- sample(1:nrow(DFT), 0.7 * nrow(DFT))  # 70% for training
+train_data <- DFT[train_indices, c(features_p1, "change_patch")]
+test_data <- DFT[-train_indices, c(features_p1, "change_patch")]
+
+
+# Entrenar el modelo
+rf_model <- randomForest(change_patch ~ ., data = train_data, ntree = 40)
+
+# Predecir en los datos de prueba
+rf_pred <- predict(rf_model, test_data)
+
+# Evaluate the model
+conf_matrix <- table(Predicted = rf_pred, Actual = test_data$change_patch)
+print(conf_matrix)
+
+# Optional: Importance of variables
+importance(rf_model)
+
+# Calculate accuracy
+rf_accuracy <- mean(rf_pred == test_data$change_patch)
+print(paste("Random Forest Accuracy:", round(rf_accuracy * 100, 2), "%"))
+
+
+
+precision_list <- c()
+
+# Entrenar y evaluar el modelo con diferentes valores de ntree
+for (ntree_val in seq(10, 200, by = 10)) {
+  # Entrenar el modelo
+  rf_model <- randomForest(change_patch ~ ., data = train_data, ntree = ntree_val)
+  
+  # Predecir en los datos de prueba
+  rf_pred <- predict(rf_model, test_data)
+  
+  # Calcular la precisión
+  precision <- mean(rf_pred == test_data$change_patch)
+  precision_list <- c(precision_list, precision)
+}
+
+# Graficar el cambio de precisión con ntree
+plot(seq(10, 200, by = 10), precision_list, type = "b", col = "blue", pch = 19,
+     xlab = "Número de árboles (ntree)", ylab = "Precisión", main = "Precisión vs ntree en Random Forest")
+
+text(seq(10, 200, by = 10), precision_list, labels = round(precision_list, 3), pos = 3, cex = 0.8, col = "red")
+
+
+rf_model <- randomForest(change_patch ~ ., data = train_data, ntree = 40)
+
+# Predecir en los datos de prueba
+rf_pred <- predict(rf_model, test_data)
+
+# Calcular la precisión
+precision <- mean(rf_pred == test_data$change_patch)
+precision
+```
+
+
+
+predict
+
+```{r}
+# Preparar features del parche siguiente
+features_p2 <- c("w_rate_p2", "pick_rate_p2", "ban_perc_p2", "kda_p2", "role_perc_p2")
+test_data <- DFT[, features_p2]
+colnames(test_data) <- features_p1  # renombrar para que coincida
+
+# Escalar como en entrenamiento
+test_data_scaled <- as.data.frame(scale(test_data))
+
+rf_future <- predict(rf_model, test_data)
+
+DFT$rf_pred <- rf_future
+
+DFT$rf_pred
 ```
