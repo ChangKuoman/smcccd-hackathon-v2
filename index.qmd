@@ -127,12 +127,66 @@ save(cv_completo, file = "cv_completo.RData")
 
 ```{r}
 outliers <- find_outliers_group(DFT, "role_p1", "w_rate_p1")
-outliers$top
-outliers$bottom
-
+to <- outliers$top %>% dplyr::select(name, ends_with("_diff"))
+bo <- outliers$bottom %>% dplyr::select(name, ends_with("_diff"))
 t <- find_outliers(DFT, "role_p1", "w_rate_p1")
-t
+tg <- t %>% dplyr::select(name, ends_with("_diff"))
+
+to
+bo
+tg
 ```
+
+
+============================
+
+```{r}
+boxplot_g(DFT, "w_rate_p2", "Win Rate")
+
+boxplot_gv(
+  DFT,
+  x_col = "role_p1", y_col = "w_rate_p2",
+  title = "Graph: Win Rate by Role Patch 2",
+  x_title = "Role", y_title = "Win Rate %"
+)
+```
+
+```{r}
+cv_general <- DFT %>%
+  summarise(
+    role_p1 = "General",
+    cv = (sd(w_rate_p2, na.rm = TRUE) / mean(w_rate_p2, na.rm = TRUE)) * 100
+  )
+
+cv_por_rol <- DFT %>%
+  group_by(role_p1) %>%
+  summarise(
+    cv = (sd(w_rate_p2, na.rm = TRUE) / mean(w_rate_p2, na.rm = TRUE)) * 100
+  )
+
+cv_completo2 <- bind_rows(cv_por_rol, cv_general)
+cv_completo2
+```
+
+
+```{r}
+df1 <- as.data.frame(cv_completo)
+df2 <- as.data.frame(cv_completo2)
+
+df1$cv <- as.numeric(df1$cv)
+df2$cv <- as.numeric(df2$cv)
+
+comparado <- merge(df1, df2, by = "role_p1", suffixes = c("_1", "_2"))
+
+comparado$diferencia <- comparado$cv_2 - comparado$cv_1
+
+print(comparado)
+
+
+```
+
+
+
 
 HASTA AQUI TODO BIEN
 
