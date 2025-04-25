@@ -12,7 +12,8 @@ norm <- function(data, var, name) {
        lwd=3,
        main=paste("Graph:", name, "Norm"),
        xlab=name,
-       ylab="Density")
+       ylab="Density",
+       ylim=c(0, 0.25))
   
   x = seq(min(y, na.rm = TRUE), max(y, na.rm = TRUE), 0.1)
   curve(dnorm(x, mean(y,na.rm=TRUE), sd(y,na.rm=TRUE)), 

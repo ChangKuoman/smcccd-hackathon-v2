@@ -94,6 +94,8 @@ print(sw)
 source("scripts/boxplot_g.R")
 source("scripts/boxplot_gv.R")
 source("scripts/outliers_f.R")
+source("scripts/norm.R")
+source("scripts/histograma.R")
 ```
 
 ```{r}
@@ -185,8 +187,77 @@ print(comparado)
 
 ```
 
+=============
 
+densidad
 
+```{r warning=FALSE}
+norm(DFT, "w_rate_p1", "Win Rate Patch 1")
+```
+
+```{r warning=FALSE}
+norm(DFT, "w_rate_p2", "Win Rate Patch 2")
+```
+==================
+
+```{r}
+var1 = "w_rate_p1"
+var2 = "w_rate_p2"
+data = DFT
+y1 <- data[[var1]]
+y2 <- data[[var2]]
+
+# Compute densities
+dens1 <- density(y1, na.rm = TRUE)
+dens2 <- density(y2, na.rm = TRUE)
+
+# Get max y for ylim
+max_y <- max(dens1$y, dens2$y)
+
+# Plot the first density
+plot(dens1,
+     col = "red",
+     lwd = 3,
+     main = paste("Density Plot: Win Rates"),
+     xlab = "Win Rate",
+     ylab = "Density",
+     ylim = c(0, max_y * 1.1))
+
+# Add the second density
+lines(dens2, col = "green", lwd = 3)
+
+# Add theoretical curves
+x1 <- seq(min(y1, na.rm = TRUE), max(y1, na.rm = TRUE), 0.1)
+x2 <- seq(min(y2, na.rm = TRUE), max(y2, na.rm = TRUE), 0.1)
+
+lines(x1, dnorm(x1, mean(y1, na.rm = TRUE), sd(y1, na.rm = TRUE)),
+      col = "blue", lwd = 2, lty = 2)
+lines(x2, dnorm(x2, mean(y2, na.rm = TRUE), sd(y2, na.rm = TRUE)),
+      col = "purple", lwd = 2, lty = 2)
+
+# Legend
+legend("topleft",
+       c("Observed 12.22", "Observed 12.23", "Theoretical 12.22", "Theoretical 12.23"),
+       col = c("red", "green", "blue", "purple"),
+       lty = c(1, 1, 2, 2),
+       lwd = 2,
+       bty = "n",
+       cex = 0.8)
+
+```
+================
+
+```{r warning=FALSE}
+histograma(DFT, "w_rate_p1", "Win Rate", "Win Rate Patch 12.22")
+```
+```{r warning=FALSE}
+histograma(DFT, "w_rate_p2", "Win Rate", "Win Rate Patch 12.23")
+```
+```{r warning=FALSE}
+histograma(DFT, "w_rate_diff", "Win Rate", "Win Rate Difference")
+```
+
+==========
 
 HASTA AQUI TODO BIEN
 
@@ -202,15 +273,9 @@ regresion_lineal(
 ```
 
 
-```{r warning=FALSE}
-source("scripts/norm.R")
-norm(DFT, "w_rate_p1", "Win Rate Patch 1")
-```
 
-```{r warning=FALSE}
-source("scripts/histograma.R")
-histograma(DFT, "w_rate_p1", "Win Rate Patch 1")
-```
+
+
 
 ```{r}
 # Predicción simple con clustering k-means sobre métricas delta

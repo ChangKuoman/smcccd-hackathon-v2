@@ -1,4 +1,4 @@
-histograma <- function(data, var, nombre) {
+histograma <- function(data, var, nombre, title) {
 
   if (!var %in% names(data)) {
     stop(paste("Column", var, "not found in data"))
@@ -56,7 +56,7 @@ histograma <- function(data, var, nombre) {
        ylim = c(0, max(frecuencias) + 5),
        xlab = nombre,
        ylab = "Absolute Frequency",
-       main = paste("Graph:", nombre, "Histogram"),
+       main = paste("Graph:", title),
        col = "darkgrey",
        border = "white")
   
