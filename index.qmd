@@ -375,4 +375,32 @@ barplot_g(DFT, "change_patch", "name")
 
 
 
+```{r}
+porcentajePred <- prop.table(table(DFT_result$rf_pred)) * 100
+porcentajePatch <- prop.table(table(DFT$change_patch)) * 100
 
+order <- c(0, 1)
+porcentajes <- cbind(porcentajePred, porcentajePatch, order)
+p_df <- data.frame(porcentajes)
+
+p_df <- p_df[order(p_df$order), ]
+p_df <- subset(p_df, select = -order)
+
+p_df <- p_df %>%
+  rename("% Predicted" = "porcentajePred",
+         "% Patch" = "porcentajePatch"
+         )-> p_df_r
+p_df_r
+
+porcentajes <- cbind(p_df_r$`% Predicted`, p_df_r$`% Patch`)
+
+barplot(porcentajes,
+    main = "Gráfico 04: Distracción en Cursos",
+    xlab = "Patch",
+    ylab = "%", 
+    col = c("dodgerblue2", "darkgoldenrod1", "brown1"),
+    legend.text = c("Buff", "None", "Nerf"),
+    args.legend = list(x = "topright", inset = c(0, 0), cex = 0.52),
+    names.arg = c("Predicted", "Patch"),
+)
+```
