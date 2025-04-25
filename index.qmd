@@ -143,6 +143,16 @@ tg
 ============================
 
 ```{r}
+cor_matrix <- DFT %>%
+  select_if(is.numeric) %>%
+  cor(use = "complete.obs")
+
+heatmap_plot <- ggcorrplot(cor_matrix, lab = TRUE, title = "Correlation Heatmap")
+ggsave("images/correlation_heatmap.png", plot = heatmap_plot, width = 12, height = 10, dpi = 300)
+heatmap_plot
+```
+
+```{r}
 boxplot_g(DFT, "w_rate_p2", "Win Rate")
 
 boxplot_gv(
@@ -257,9 +267,19 @@ histograma(DFT, "w_rate_p2", "Win Rate", "Win Rate Patch 12.23")
 histograma(DFT, "w_rate_diff", "Win Rate", "Win Rate Difference")
 ```
 
+```{r warning=FALSE}
+histograma(DFT, "kda_p1", "KDA", "KDA Patch 12.22")
+```
+```{r warning=FALSE}
+histograma(DFT, "kda_p2", "KDA", "KDA Patch 12.23")
+```
+```{r warning=FALSE}
+histograma(DFT, "kda_diff", "KDA", "KDA Difference")
+```
+
+
 ==========
 
-HASTA AQUI TODO BIEN
 
 ```{r warning=FALSE}
 source("scripts/regresion_lineal.R")
@@ -267,85 +287,22 @@ regresion_lineal(
   DFT,
   x_col = "w_rate_diff",
   y_col = "kda_diff",
-  titulo = "Gráfico",
+  title = "Graph: Linear Regression KDA and Win Rate Difference",
+  x_title = "Win Rate Difference", y_title = "KDA Difference",
   y_lim = c(-1,1)
 )
 ```
 
 
+==============
 
-
-
-
-```{r}
-# Predicción simple con clustering k-means sobre métricas delta
-set.seed(123)
-cluster_data <- DFT %>% dplyr::select(w_rate_p1, ban_perc_p1, kda_p1)
-kmeans_result <- kmeans(scale(cluster_data), centers = 3, nstart = 25)
-DFT$cluster <- as.factor(kmeans_result$cluster)
-
-# Visualización de clustering
-fviz_cluster(kmeans_result, data = scale(cluster_data), geom = "point", ellipse.type = "norm", main = "Clustering de Campeones según Cambios en Métricas")
-```
-
-```{r}
-names(DFT)
-```
-
-```{r}
-# Install required package if not already installed
-if (!require(dbscan)) install.packages("dbscan")
-
-library(dbscan)
-
-# Preprocess the data
-cluster_data <- DFT %>% dplyr::select(w_rate_diff, pick_rate_diff, ban_perc_diff)
-
-# Standardize the data (important for DBSCAN)
-cluster_data_scaled <- scale(cluster_data)
-
-# Apply DBSCAN
-# eps is the maximum distance between two points to be considered as in the same neighborhood
-# minPts is the minimum number of points required to form a cluster
-dbscan_result <- dbscan(cluster_data_scaled, eps = 0.5, minPts = 5)
-
-# Add DBSCAN cluster results to the data
-DFT$dbscan_cluster <- as.factor(dbscan_result$cluster)
-
-# Visualize the DBSCAN clustering result
-library(ggplot2)
-ggplot(DFT, aes(x = w_rate_diff, y = pick_rate_diff, color = dbscan_cluster)) +
-  geom_point() +
-  labs(title = "DBSCAN Clustering on Metrics Differences",
-       x = "Win Rate Difference",
-       y = "Pick Rate Difference") +
-  theme_minimal()
-
-```
-
-```{r}
-
-
-# Compute correlation matrix
-cor_matrix <- DFT %>%
-  select_if(is.numeric) %>%
-  cor(use = "complete.obs")
-
-# Plot heatmap
-heatmap_plot <- ggcorrplot(cor_matrix, lab = TRUE, title = "Correlation Heatmap")
-ggsave("images/correlation_heatmap.png", plot = heatmap_plot, width = 12, height = 10, dpi = 300)
-```
-
-
-
-
-random forest
+Random Forest
 
 ```{r}
 DFT <- DFT %>%
   mutate(change_patch = case_when(
-    w_rate_diff > 0.05 & pick_rate_diff > 0.05 ~ "Buff",
-    w_rate_diff < -0.05 & pick_rate_diff < -0.05 ~ "Nerf",
+    w_rate_diff >= 0.10 ~ "Buff",
+    w_rate_diff <= -0.10 ~ "Nerf",
     TRUE ~ "None"
   )) %>%
   mutate(change_patch = as.factor(change_patch))
@@ -356,60 +313,38 @@ DFT$change_patch <- as.factor(DFT$change_patch)
 # Variables del modelo (solo _p1)
 features_p1 <- c("w_rate_p1", "pick_rate_p1", "ban_perc_p1", "kda_p1", "role_perc_p1")
 set.seed(123)  # Set seed for reproducibility
-train_indices <- sample(1:nrow(DFT), 0.7 * nrow(DFT))  # 70% for training
+train_indices <- sample(1:nrow(DFT), 0.85 * nrow(DFT))
 train_data <- DFT[train_indices, c(features_p1, "change_patch")]
 test_data <- DFT[-train_indices, c(features_p1, "change_patch")]
 
-
-# Entrenar el modelo
-rf_model <- randomForest(change_patch ~ ., data = train_data, ntree = 40)
-
-# Predecir en los datos de prueba
-rf_pred <- predict(rf_model, test_data)
-
-# Evaluate the model
-conf_matrix <- table(Predicted = rf_pred, Actual = test_data$change_patch)
-print(conf_matrix)
-
-# Optional: Importance of variables
-importance(rf_model)
-
-# Calculate accuracy
-rf_accuracy <- mean(rf_pred == test_data$change_patch)
-print(paste("Random Forest Accuracy:", round(rf_accuracy * 100, 2), "%"))
-
-
-
 precision_list <- c()
 
-# Entrenar y evaluar el modelo con diferentes valores de ntree
 for (ntree_val in seq(10, 200, by = 10)) {
-  # Entrenar el modelo
   rf_model <- randomForest(change_patch ~ ., data = train_data, ntree = ntree_val)
   
-  # Predecir en los datos de prueba
   rf_pred <- predict(rf_model, test_data)
   
-  # Calcular la precisión
   precision <- mean(rf_pred == test_data$change_patch)
   precision_list <- c(precision_list, precision)
 }
 
-# Graficar el cambio de precisión con ntree
 plot(seq(10, 200, by = 10), precision_list, type = "b", col = "blue", pch = 19,
-     xlab = "Número de árboles (ntree)", ylab = "Precisión", main = "Precisión vs ntree en Random Forest")
+     xlab = "Number of Trees (ntree)", ylab = "Precision", main = "Precision vs Number of Trees in Random Forest")
 
 text(seq(10, 200, by = 10), precision_list, labels = round(precision_list, 3), pos = 3, cex = 0.8, col = "red")
 
 
-rf_model <- randomForest(change_patch ~ ., data = train_data, ntree = 40)
+rf_modelT <- randomForest(change_patch ~ ., data = train_data, ntree = 40)
 
-# Predecir en los datos de prueba
-rf_pred <- predict(rf_model, test_data)
+rf_predT <- predict(rf_modelT, test_data)
 
-# Calcular la precisión
-precision <- mean(rf_pred == test_data$change_patch)
-precision
+conf_matrixT <- table(Predicted = rf_predT, Actual = test_data$change_patch)
+print(conf_matrixT)
+
+importance(rf_modelT)
+
+rf_accuracyT <- mean(rf_predT == test_data$change_patch)
+print(paste("Random Forest Accuracy:", round(rf_accuracyT * 100, 2), "%"))
 ```
 
 
@@ -417,17 +352,17 @@ precision
 predict
 
 ```{r}
-# Preparar features del parche siguiente
 features_p2 <- c("w_rate_p2", "pick_rate_p2", "ban_perc_p2", "kda_p2", "role_perc_p2")
 test_data <- DFT[, features_p2]
-colnames(test_data) <- features_p1  # renombrar para que coincida
+colnames(test_data) <- features_p1
 
-# Escalar como en entrenamiento
 test_data_scaled <- as.data.frame(scale(test_data))
 
 rf_future <- predict(rf_model, test_data)
 
 DFT$rf_pred <- rf_future
 
-DFT$rf_pred
+
+DFT_result <- DFT[, c("name", "rf_pred")]
+DFT_result
 ```
