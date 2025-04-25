@@ -395,7 +395,7 @@ p_df_r
 porcentajes <- cbind(p_df_r$`% Predicted`, p_df_r$`% Patch`)
 
 barplot(porcentajes,
-    main = "Gráfico 04: Distracción en Cursos",
+    main = "Graph",
     xlab = "Patch",
     ylab = "%", 
     col = c("dodgerblue2", "darkgoldenrod1", "brown1"),
